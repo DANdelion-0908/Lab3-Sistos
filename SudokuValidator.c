@@ -1,48 +1,57 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 
-int sudokuLayout[8][8];
-
-int main(int argc, char const *argv[])
-{
-    size_t file_size = 1024;
-    char file_content[file_size];
-    int fd = open(argv[1], O_RDONLY);
-
-    if (fd == -1) {
-        perror("Error opening file");
-        return -1;
-    }
-
-    char *file_memory = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
-
-    if (file_memory == MAP_FAILED) {
-        perror("Error at mmap");
-        close(fd);
-        return -1;
-    }
+int column_validator(int sudoku[9][9]) {
+    int return_value = 0;
     
-    printf("\nmmap content: %c\n", file_memory[0]);
-    int k = 0;
-
     for (int i = 0; i < 9; i++) {
+        int total = 0;
+
         for (int j = 0; j < 9; j++) {
-            sudokuLayout[i][j] = file_memory[k];
-            printf("\nElemento agregado: %c\n", file_memory[k]);
-            k++;    
+            int number = sudoku[j][i] - '0';
+            total += number;
+        } 
+
+        if (total == 45) {
+           return_value += 1;
         }
     }
 
+    return (return_value == 9) ? 1 : 0;
+}
+
+int row_validator(int sudoku[9][9]) {
+    int return_value = 0;
+    
     for (int i = 0; i < 9; i++) {
+        int total = 0;
+
         for (int j = 0; j < 9; j++) {
-            printf("\nSudoku[%d][%d]: %c\n", i, j, sudokuLayout[i][j]);
+            int number = sudoku[i][j] - '0';
+            total += number;
+        } 
+
+        if (total == 45) {
+           return_value += 1;
         }
     }
 
-    munmap(file_memory, file_size);
-    close(fd);
-    return 0;
+    return (return_value == 9) ? 1 : 0;
+}
+
+int three_X_three(int sudoku[9][9], int row, int column) {
+    int total = 0;
+    int seen[10] = {0};
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int number = sudoku[row + i][column + j] - '0';
+            if (number < 1 || number > 9 || seen[number]) {
+                return 0;
+            }
+            seen[number] = 1;
+            total += number;
+        }
+    }
+
+    return (total == 45) ? 1 : 0;
 }
