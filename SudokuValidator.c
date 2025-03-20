@@ -16,12 +16,12 @@ void* column_validator() {
     int thread_number = syscall(SYS_gettid);
     printf("Thread que realiza la revisión de columnas: %d\n", thread_number);
     
+    #pragma omp parallel for
     for (int i = 0; i < 9; i++) {
-        #pragma omp parallel for
         int total = 0;
 
+        #pragma omp parallel for
         for (int j = 0; j < 9; j++) {
-            #pragma omp parallel for
             int number = sudokuLayout[j][i] - '0';
             total += number;
         } 
@@ -42,12 +42,12 @@ void* row_validator() {
     int *return_value = malloc(sizeof(int));
     *return_value = 0;
     
+    #pragma omp parallel for
     for (int i = 0; i < 9; i++) {
-        #pragma omp parallel for
         int total = 0;
 
+        #pragma omp parallel for
         for (int j = 0; j < 9; j++) {
-            #pragma omp parallel for
             int number = sudokuLayout[i][j] - '0';
             total += number;
         } 
@@ -66,10 +66,10 @@ int three_X_three(int row, int column) {
     int total = 0;
     int seen[10] = {0};
 
+    #pragma omp parallel for
     for (int i = 0; i < 3; i++) {
         #pragma omp parallel for
         for (int j = 0; j < 3; j++) {
-            #pragma omp parallel for
             int number = sudokuLayout[row + i][column + j] - '0';
             if (number < 1 || number > 9 || seen[number]) {
                 return 0;
@@ -104,10 +104,10 @@ int main(int argc, char const *argv[])
     printf("\nmmap content: %s\n", file_memory);
     int k = 0;
 
+    #pragma omp parallel for
     for (int i = 0; i < 9; i++) {
         #pragma omp parallel for
         for (int j = 0; j < 9; j++) {
-            #pragma omp parallel for
             sudokuLayout[i][j] = file_memory[k];
             k++;    
         }
@@ -115,12 +115,16 @@ int main(int argc, char const *argv[])
 
     int values[3] = {0, 3, 6};
     int three_validation = 0;
-    for (int i = 0; i < 2; i++) {
+    
+    #pragma omp parallel for
+    for (int i = 0; i < 3; i++) {
         #pragma omp parallel for
-        three_validation += (values[i], values[i]);
+        for (int j = 0; j < 3; j++) {
+            three_validation += three_X_three(values[i], values[j]);
+        }
     }
-
-    if (three_validation == 3) {
+    
+    if (three_validation == 9) {
         printf("\nSudoku Válido\n");
 
     } else {
