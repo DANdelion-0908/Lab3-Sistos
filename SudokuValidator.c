@@ -20,7 +20,6 @@ void* column_validator() {
     for (int i = 0; i < 9; i++) {
         int total = 0;
 
-        #pragma omp parallel for
         for (int j = 0; j < 9; j++) {
             int number = sudokuLayout[j][i] - '0';
             total += number;
@@ -46,7 +45,6 @@ void* row_validator() {
     for (int i = 0; i < 9; i++) {
         int total = 0;
 
-        #pragma omp parallel for
         for (int j = 0; j < 9; j++) {
             int number = sudokuLayout[i][j] - '0';
             total += number;
@@ -66,9 +64,7 @@ int three_X_three(int row, int column) {
     int total = 0;
     int seen[10] = {0};
 
-    #pragma omp parallel for
     for (int i = 0; i < 3; i++) {
-        #pragma omp parallel for
         for (int j = 0; j < 3; j++) {
             int number = sudokuLayout[row + i][column + j] - '0';
             if (number < 1 || number > 9 || seen[number]) {
@@ -106,7 +102,6 @@ int main(int argc, char const *argv[])
 
     #pragma omp parallel for
     for (int i = 0; i < 9; i++) {
-        #pragma omp parallel for
         for (int j = 0; j < 9; j++) {
             sudokuLayout[i][j] = file_memory[k];
             k++;    
@@ -118,17 +113,16 @@ int main(int argc, char const *argv[])
     
     #pragma omp parallel for
     for (int i = 0; i < 3; i++) {
-        #pragma omp parallel for
         for (int j = 0; j < 3; j++) {
             three_validation += three_X_three(values[i], values[j]);
         }
     }
     
     if (three_validation == 9) {
-        printf("\nSudoku Válido\n");
+        printf("Sudoku Válido\n");
 
     } else {
-        printf("\nSudoku Inválido\n");
+        printf("Sudoku Inválido\n");
     }
 
     pid_t parent = getpid();
