@@ -9,17 +9,20 @@
 #include <stdbool.h>
 #include <omp.h>
 
+// Variable global
 int sudokuLayout[9][9];
 
+// Verificador de columnas
 void* column_validator() {
-    // omp_set_num_threads(9);
-    omp_set_nested(true);
+    omp_set_num_threads(9);
+    omp_set_nested(true); // Anidación de regiones paralelas
+
     int *return_value = malloc(sizeof(int));
     *return_value = 0;
     int thread_number = syscall(SYS_gettid);
     printf("Thread que realiza la revisión de columnas: %d\n", thread_number);
     
-    #pragma omp parallel for //schedule(dynamic)
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < 9; i++) {
         int total = 0;
         thread_number = syscall(SYS_gettid);
@@ -41,9 +44,10 @@ void* column_validator() {
     pthread_exit(return_value);
 }
 
+// Verificador de filas no pthread
 void* row_validator() {
-    omp_set_nested(true);
     omp_set_num_threads(9);
+    omp_set_nested(true); // Anidación de regiones paralelas
     int *return_value = malloc(sizeof(int));
     *return_value = 0;
     int thread_number = syscall(SYS_gettid);
@@ -72,6 +76,7 @@ void* row_validator() {
     return return_value;
 }
 
+// Verificador de submatrices
 int three_X_three(int row, int column) {
     int total = 0;
     int seen[10] = {0};
@@ -92,7 +97,7 @@ int three_X_three(int row, int column) {
 
 int main(int argc, char const *argv[])
 {
-    omp_set_num_threads(1);
+    omp_set_num_threads(1); // Número de hilos = 1
 
     size_t file_size = 1024;
     char file_content[file_size];
@@ -103,7 +108,7 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    char *file_memory = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
+    char *file_memory = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0); // Almacenado de sudoku en memoria
 
     if (file_memory == MAP_FAILED) {
         perror("Error at mmap");
@@ -111,12 +116,12 @@ int main(int argc, char const *argv[])
         return -1;
     }
     
-    printf("\nmmap content: %s\n", file_memory);
+    printf("\nmmap content: %s\n", file_memory); // Mostrar sudoku en memoria
     int k = 0;
 
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
-            sudokuLayout[i][j] = file_memory[k];
+            sudokuLayout[i][j] = file_memory[k]; // Almacenar sudoku enb arreglo 2D
             k++;    
         }
     }
@@ -126,7 +131,7 @@ int main(int argc, char const *argv[])
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            three_validation += three_X_three(values[i], values[j]);
+            three_validation += three_X_three(values[i], values[j]); // Verificación de submatrices
         }
     }
     
@@ -190,7 +195,7 @@ int main(int argc, char const *argv[])
             sprintf(buffer, "%d", parent);
             execlp("ps", "ps", "-p",  buffer , "-lLf", NULL);
 
-        } else {
+        } else { // Padre de nuevo
             waitpid(child2, NULL, 0);
         }
 
