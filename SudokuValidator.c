@@ -6,25 +6,29 @@
 #include <sys/syscall.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <omp.h>
 
 int sudokuLayout[9][9];
 
 void* column_validator() {
+    // omp_set_num_threads(9);
+    omp_set_nested(true);
     int *return_value = malloc(sizeof(int));
     *return_value = 0;
     int thread_number = syscall(SYS_gettid);
     printf("Thread que realiza la revisión de columnas: %d\n", thread_number);
     
-    #pragma omp parallel for
+    #pragma omp parallel for //schedule(dynamic)
     for (int i = 0; i < 9; i++) {
         int total = 0;
-
+        thread_number = syscall(SYS_gettid);
+        #pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < 9; j++) {
             int number = sudokuLayout[j][i] - '0';
             total += number;
         } 
-
+        
         printf("Thread en ejecución durante revisión de columnas: %d\n", thread_number);
 
         if (total == 45) {
@@ -38,22 +42,30 @@ void* column_validator() {
 }
 
 void* row_validator() {
+    omp_set_nested(true);
+    omp_set_num_threads(9);
     int *return_value = malloc(sizeof(int));
     *return_value = 0;
-    
-    #pragma omp parallel for
+    int thread_number = syscall(SYS_gettid);
+    printf("Thread que realiza la revisión de filas: %d\n", thread_number);
+
+    #pragma omp parallel for //schedule(dynamic)
     for (int i = 0; i < 9; i++) {
         int total = 0;
-
+        #pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < 9; j++) {
             int number = sudokuLayout[i][j] - '0';
             total += number;
         } 
 
+        printf("Thread en ejecución durante revisión de filas: %d\n", thread_number);
+
         if (total == 45) {
            *return_value += 1;
         }
     }
+
+    // printf("Return Row: %d\n", *return_value);
 
     *return_value = (*return_value == 9) ? 1 : 0;
 
@@ -80,6 +92,8 @@ int three_X_three(int row, int column) {
 
 int main(int argc, char const *argv[])
 {
+    omp_set_num_threads(1);
+
     size_t file_size = 1024;
     char file_content[file_size];
     int fd = open(argv[1], O_RDONLY);
@@ -100,7 +114,6 @@ int main(int argc, char const *argv[])
     printf("\nmmap content: %s\n", file_memory);
     int k = 0;
 
-    #pragma omp parallel for
     for (int i = 0; i < 9; i++) {
         for (int j = 0; j < 9; j++) {
             sudokuLayout[i][j] = file_memory[k];
@@ -111,7 +124,6 @@ int main(int argc, char const *argv[])
     int values[3] = {0, 3, 6};
     int three_validation = 0;
     
-    #pragma omp parallel for
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             three_validation += three_X_three(values[i], values[j]);
@@ -150,12 +162,15 @@ int main(int argc, char const *argv[])
         }
         
         pthread_join(ptid, (void**)&columns);
+
         printf("\nProceso que ejecuta el main(): %d\n", parent);
 
         waitpid(child, NULL, 0);
         
         int *rows = row_validator();
         
+        // printf("Rows: %d    Columns: %d\n", *rows, *columns);
+
         if (*rows == 1 && *columns == 1) {
             printf("\nSudoku Válido\n");
             
